@@ -81,6 +81,7 @@ class TaskManagerEngine:
             CommandResult: The result of the command execution
         """
         try:
+            #check for exit
             if command.prompt.strip().lower() in ["quit", "exit", "end", "bye"]:
                 await self.message_bus.publish(
                 TaskManagerEngineStatusEvent(
@@ -102,9 +103,6 @@ class TaskManagerEngine:
                 tools = await self.tool_manager.get_tools()
 
                 # 4. Call LLM
-                # print(
-                #     f"\nCalling LLM with context:\n{json.dumps(current_context, indent=2)}\n"
-                # )  # Debug print
                 await self.message_bus.publish(
                     TaskManagerEngineStatusEvent(
                         status="calling LLM", session_id=self.session_id
@@ -117,17 +115,13 @@ class TaskManagerEngine:
                     "response is not an OpenAIResponse"
                 )
 
-                # print(f"\nLLM Raw Response:\n{response.raw}\n")  # Debug print
-
                 # 5. Extract the first choice's message object
-                # Important: Access the underlying OpenAI object structure
                 response_message: ChatCompletionMessage = response.raw.choices[0].message
                 assert isinstance(response_message, ChatCompletionMessage), (
                     "response_message is not a ChatCompletionMessage"
                 )
 
                 # 6. Add the *entire* assistant message object to history.
-                # This is crucial for context if it contains tool_calls.
                 await self.context_manager.store_assistant_message(response_message)
 
                 # 7. Check for tool calls
@@ -198,7 +192,6 @@ class TaskManagerEngine:
 
         except Exception as e:
             # Log the exception before returning
-            # logger.exception(f"Error in handle_prompt_command for session {self.session_id}") # Requires logger setup
             print(f"ERROR in handle_prompt_command: {e}")  # Simple print for now
             import traceback
 
@@ -230,9 +223,6 @@ class TaskManagerEngine:
 
 async def main():
     import os
-
-    print(f"Current working directory: {os.getcwd()}")
-
     from tools.test_tools import save_file
     from tools.test_tools import allocate
     from llmgine.ui.cli.components import ToolComponent
